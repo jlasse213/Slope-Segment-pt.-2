@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slope Practice</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { text-align: center; }
+    #graph { display: block; margin: 0 auto 24px auto; background: #fafafa; border: 1px solid #ccc; }
+    .input-group { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+    .input-group input { width: 80px; padding: 6px; margin-right: 8px; }
+    .feedback { text-align: center; font-size: 1.1em; margin-bottom: 16px; min-height: 24px; }
+    #new-question { display: none; margin: 0 auto; padding: 8px 16px; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Slope of a Line Segment Practice</h1>
+  <canvas id="graph" width="400" height="400"></canvas>
+  <div id="points" style="text-align:center; font-size:1.1em; margin-bottom:16px;"></div>
+    <div class="input-group">
+      <label for="slope-input">Slope: </label>
+      <input type="text" id="slope-input" placeholder="e.g. 0.5 or 1/2">
+      <button id="submit">Submit</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <button id="new-question">New Question</button>
+  </div>
+  <script>
+    const canvas = document.getElementById('graph');
+    const ctx = canvas.getContext('2d');
+    const size = 400;
+    const min = -10, max = 10;
+    const scale = size / (max - min);
+    let pointA, pointB, correctSlope;
+
+    function toCanvasCoords(x, y) {
+      // Cartesian to canvas coordinates
+      return [
+        (x - min) * scale,
+        size - (y - min) * scale
+      ];
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, size, size);
+      ctx.strokeStyle = '#ddd';
+      ctx.lineWidth = 1;
+      for (let i = min; i <= max; i++) {
+        // Vertical lines
+        ctx.beginPath();
+        ctx.moveTo((i - min) * scale, 0);
+        ctx.lineTo((i - min) * scale, size);
+        ctx.stroke();
+        // Horizontal lines
+        ctx.beginPath();
+        ctx.moveTo(0, (i - min) * scale);
+        ctx.lineTo(size, (i - min) * scale);
+        ctx.stroke();
+      }
+      // Axes
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+      // y-axis
+      ctx.beginPath();
+      ctx.moveTo((0 - min) * scale, 0);
+      ctx.lineTo((0 - min) * scale, size);
+      ctx.stroke();
+      // x-axis
+      ctx.beginPath();
+      ctx.moveTo(0, size - (0 - min) * scale);
+      ctx.lineTo(size, size - (0 - min) * scale);
+      ctx.stroke();
+    }
+
+    function drawPointsAndSegment() {
+      // Draw segment
+      ctx.strokeStyle = '#0074D9';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const [x1, y1] = toCanvasCoords(pointA.x, pointA.y);
+      const [x2, y2] = toCanvasCoords(pointB.x, pointB.y);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      // Draw points
+      ctx.fillStyle = '#FF4136';
+      ctx.beginPath();
+      ctx.arc(x1, y1, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x2, y2, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      // Label points
+      ctx.font = 'bold 16px Arial';
+      ctx.fillStyle = '#111';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('A', x1 + 8, y1 - 8);
+      ctx.fillText('B', x2 + 8, y2 - 8);
+    }
+
+    function randomPoint() {
+      return {
+        x: Math.floor(Math.random() * (max - min + 1)) + min,
+        y: Math.floor(Math.random() * (max - min + 1)) + min
+      };
+    }
+
+    function generateQuestion() {
+      // Ensure two distinct points with different x values
+      do {
+        pointA = randomPoint();
+        pointB = randomPoint();
+      } while (pointA.x === pointB.x || (pointA.x === pointB.x && pointA.y === pointB.y));
+      correctSlope = (pointB.y - pointA.y) / (pointB.x - pointA.x);
+      drawGrid();
+      drawPointsAndSegment();
+      // Show the coordinates of the points
+      document.getElementById('points').textContent = `A (${pointA.x}, ${pointA.y})   B (${pointB.x}, ${pointB.y})`;
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('slope-input').value = '';
+      document.getElementById('new-question').style.display = 'none';
+      document.getElementById('submit').disabled = false;
+    }
+
+    function parseSlopeInput(input) {
+      input = input.trim();
+      // Check for fraction (e.g. 3/4)
+      if (/^[-+]?\d+\s*\/\s*[-+]?\d+$/.test(input)) {
+        const [num, denom] = input.split('/').map(s => parseFloat(s));
+        if (denom === 0) return NaN;
+        return num / denom;
+      }
+      // Otherwise, try to parse as float
+      return parseFloat(input);
+    }
+
+    document.getElementById('submit').onclick = function() {
+      const inputValue = document.getElementById('slope-input').value;
+      const userSlope = parseSlopeInput(inputValue);
+      if (isNaN(userSlope)) {
+        document.getElementById('feedback').textContent = 'Please enter a valid number or fraction.';
+        return;
+      }
+      // Accept small floating point error
+      if (Math.abs(userSlope - correctSlope) < 1e-6) {
+        document.getElementById('feedback').textContent = 'Correct!';
+        document.getElementById('new-question').style.display = 'block';
+        document.getElementById('submit').disabled = true;
+      } else {
+        document.getElementById('feedback').textContent = 'Incorrect. Try again!';
+      }
+    };
+
+    document.getElementById('new-question').onclick = generateQuestion;
+
+    // Initial question
+    generateQuestion();
+  </script>
+</body>
+</html>
